@@ -1,18 +1,39 @@
-buildscript {
-	val kotlinVersion by extra("1.8.22)
-    repositories {
-        google()
-        mavenCentral()
+plugins {
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
+android {
+    namespace = "com.usidphoto.maker"
+    compileSdk = 36
+    buildToolsVersion = "34.0.0"
+
+    defaultConfig {
+        applicationId = "com.usidphoto.maker"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0.0"
     }
-    dependencies {
-        classpath("com.android.tools.build:gradle:7.0.0")
-		classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+        }
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+flutter {
+    source = "../.."
 }

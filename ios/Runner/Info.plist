@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photo for ID card production</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select album photo to make ID photo</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save ID photo to album</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
