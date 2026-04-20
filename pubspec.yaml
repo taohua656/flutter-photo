@@ -3,7 +3,7 @@ description: USA Passport Visa ID Photo Maker
 version: 1.0.0+1
 
 environment:
-  sdk: '3.11.4'
+  sdk: '>=3.11.4 <4.0.0'
   flutter: '3.41.6'
 
 dependencies:
