@@ -1,4 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -7,115 +13,196 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: '证件照制作',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const IdPhotoPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class IdPhotoPage extends StatefulWidget {
+  const IdPhotoPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<IdPhotoPage> createState() => _IdPhotoPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _IdPhotoPageState extends State<IdPhotoPage> {
+  File? _imageFile;
+  Color _bgColor = Colors.white;
 
-  void _incrementCounter() {
+  final List<Map<String, dynamic>> _sizes = [
+    {"name": "一寸照", "width": 295, "height": 413},
+    {"name": "二寸照", "width": 413, "height": 531},
+    {"name": "护照照", "width": 354, "height": 472},
+  ];
+
+  Map<String, dynamic>? _selectedSize;
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
+      _cropImage(File(pickedFile.path));
+    }
+  }
+
+  Future<void> _cropImage(File image) async {
+    if (_selectedSize == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先选择证件照尺寸')),
+      );
+      return;
+    }
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: image.path,
+      aspectRatio: CropAspectRatio(
+        ratioX: _selectedSize!["width"].toDouble(),
+        ratioY: _selectedSize!["height"].toDouble(),
+      ),
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: '裁剪证件照',
+          toolbarColor: Colors.blue,
+          toolbarWidgetColor: Colors.white,
+        ),
+        IOSUiSettings(title: '裁剪证件照'),
+      ],
+    );
+
+    if (croppedFile != null) {
+      setState(() {
+        _imageFile = File(croppedFile.path);
+      });
+    }
+  }
+
+  Future<void> _changeBackground() async {
+    if (_imageFile == null) return;
+
+    final imageBytes = await _imageFile!.readAsBytes();
+    final img.Image? originalImage = img.decodeImage(imageBytes);
+    if (originalImage == null) return;
+
+    final newImage = img.Image(
+      width: originalImage.width,
+      height: originalImage.height,
+      backgroundColor: img.ColorRgba8(
+        (_bgColor.r * 255).round(),
+        (_bgColor.g * 255).round(),
+        (_bgColor.b * 255).round(),
+        (_bgColor.a * 255).round(),
+      ),
+    );
+
+    img.compositeImage(newImage, originalImage);
+
+    final tempDir = await getTemporaryDirectory();
+    final tempPath = '${tempDir.path}/id_photo_new.png';
+    await File(tempPath).writeAsBytes(img.encodePng(newImage));
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _imageFile = File(tempPath);
     });
+  }
+
+  void _selectColor() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择背景色'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: _bgColor,
+            onColorChanged: (color) => setState(() => _bgColor = color),
+            labelTypes: [],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      appBar: AppBar(title: const Text('证件照制作工具')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            SizedBox(
+              height: 60,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _sizes.length,
+                itemBuilder: (context, index) {
+                  final size = _sizes[index];
+                  final isSelected = _selectedSize == size;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isSelected ? Colors.blue : Colors.grey[200],
+                        foregroundColor: isSelected ? Colors.white : Colors.black,
+                      ),
+                      onPressed: () => setState(() {
+                        _selectedSize = size;
+                      }),
+                      child: Text(size["name"]),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: _imageFile == null
+                  ? const Center(child: Text('请选择/拍摄照片并裁剪'))
+                  : Image.file(_imageFile!),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton(
+                  onPressed: () => _pickImage(ImageSource.camera),
+                  child: const Row(
+                    children: [Icon(Icons.camera_alt), Text('拍照')],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  child: const Row(
+                    children: [Icon(Icons.photo_library), Text('选图')],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _selectColor,
+                  child: const Row(
+                    children: [Icon(Icons.color_lens), Text('换背景')],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: _changeBackground,
+              child: const Text('生成证件照'),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
