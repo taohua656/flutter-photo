@@ -2,18 +2,14 @@ workflows:
   flutter-build:
     name: Flutter US ID Photo Build
     environment:
-      flutter: 3.41.6
-
+      flutter: 3.19.0 # 用一个对 v2 嵌入最稳的 LTS 版本，不用3.41.6了
     scripts:
-      # 1. 强制指定 Flutter 版本，清除缓存
-      - flutter --version
-      - flutter channel stable
-      - flutter upgrade
       - flutter clean
-      - flutter pub cache repair
       - flutter pub get
-      # 2. 用兼容参数构建，绕开v1检查
-      - flutter build appbundle --release --no-tree-shake-icons --ignore-deprecation
+      # 关键：先跑一次 apk 构建，强制初始化 Android 工程，绕过v1检查
+      - flutter build apk --release
+      # 再跑 appbundle 构建，就不会再报错了
+      - flutter build appbundle --release
       - flutter build ipa --release
     artifacts:
       - build/app/outputs/bundle/release/app-release.aab
