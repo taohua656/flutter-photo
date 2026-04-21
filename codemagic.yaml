@@ -3,7 +3,7 @@ workflows:
     name: Flutter US ID Photo Build
     environment:
       flutter: 3.41.6
-      xcode: 15.4
+
     scripts:
       # 1. 强制指定 Flutter 版本，清除缓存
       - flutter --version
