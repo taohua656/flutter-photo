@@ -8,9 +8,12 @@
         android:label="US ID Photo"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name="io.flutter.embedding.android.FlutterActivity"
+            //android:name="io.flutter.embedding.android.FlutterActivity"
             android:exported="true"
             android:hardwareAccelerated="true">
+			<meta-data
+				android:name="flutterEmbedding"
+				android:value="2" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
